@@ -12,34 +12,25 @@
             waitSeconds: 60
         });
     </script>
-  
+
 </head>
 <body class="sandcastle-loading" data-sandcastle-bucket="bucket-requirejs.html">
     <style>
         @import url("{{ asset('CesiumOld/Apps/Sandcastle/templates/bucket.css') }}");
     </style>
     <div id="cesiumContainer" class="fullSize"></div>
-    
+
 
     <script id="cesium_sandcastle_script">
-        function startup(Cesium) 
+        function startup(Cesium)
         {
             'use strict';
             //Sandcastle_Begin
-            /**
-				Requesting unique key in order to use bing map API
-            **/
             Cesium.BingMapsApi.defaultKey = 'AoUP29Z-v0eqHOJaE4BaVhYJ1XuRZX04Oeiiw8if5KliJq7BbbJw9t0IrPe-Uix1';
+            var viewer = new Cesium.Viewer('cesiumContainer',{sceneMode : Cesium.SceneMode.SCENE2D});
 
-            /**
-				Set up viewer variable that will hold all visual additions to container
-            **/
-            var viewer = new Cesium.Viewer('cesiumContainer');
-
-            /**
-				Default location which is set to grand forks with default camera controls setup
-            **/
             var gfLocation = new Cesium.Cartesian3.fromDegrees(-97.181238, 47.957674, 2631.0827);
+
             var homeCameraView = {
                 destination: gfLocation,
                 orientation: {
@@ -49,46 +40,46 @@
                 }
             };
 
-            viewer.scene.camera.setView(homeCameraView);
-            viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function (e) {
-    			e.cancel = true;
-    			viewer.scene.camera.flyTo(homeCameraView);
+    //         viewer.scene.camera.setView(homeCameraView);
+    //         viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function (e) {
+    // e.cancel = true;
+    // viewer.scene.camera.flyTo(homeCameraView);
 
-    	<?php
-        	echo "var obj = $data;";
-    	?>
+    <?php
+        echo "var obj = $data;";
+    ?>
 
-    	var points = obj.split(',');
-    	//Delete last element due to it being a ','
-    	points.pop();
-    	//console.log(points); Debugging purposes
+    var flights = obj.split(' ');
+    flights.pop();
+    // console.log(flights);
+    flights.forEach(function(element)
+    {
+        var points = element.split(',');
+        points.pop();
+        console.log(points);
+        var flightPath = viewer.entities.add({
+            polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArray(points),
+            // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
+            width: 2,
+            material: 'FFFFFF'
+        }});
+    });
 
-    	var flightPath = viewer.entities.add({
-    	name: "Test flight",
-    	polyline: {
-        	<?php
-        	$newstr = chop($data,',');
-        	echo "positions: Cesium.Cartesian3.fromDegreesArray(points),"; 
-        	?>
-        	// positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
-        	width: 2,
-        	material: Cesium.Color.RED
-    	}
-	});
-	viewer.zoomTo(viewer.entities);
 
-	});
+viewer.zoomTo(viewer.entities);
 
-	// Set up clock and timeline.
-	viewer.clock.shouldAnimate = true; // default
-    	        //Sandcastle_End
-        	    Sandcastle.finishedLoading();
-        	}
-        	if (typeof Cesium !== "undefined") {
-            	startup(Cesium);
-        	} else if (typeof require === "function") {
-            	require(["Cesium"], startup);
-        	}
+
+// Set up clock and timeline.
+viewer.clock.shouldAnimate = true; // default
+            //Sandcastle_End
+            Sandcastle.finishedLoading();
+        }
+        if (typeof Cesium !== "undefined") {
+            startup(Cesium);
+        } else if (typeof require === "function") {
+            require(["Cesium"], startup);
+        }
     </script>
 
 
