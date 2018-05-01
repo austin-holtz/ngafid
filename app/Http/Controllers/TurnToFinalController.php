@@ -40,11 +40,10 @@ class TurnToFinalController extends Controller {
 						->where('date','<=',$endDate)
 						->get();
 		//Creating default airport selector to run queries
-		$airportQuery = Airport::select('*')->get();
 		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
 
 		//Run Queries in order to get extended center lines
-		
+		$extendedCenterLine = Airport::where('id', '=', $airport)->get();
 
 
 
@@ -98,6 +97,9 @@ class TurnToFinalController extends Controller {
 
 			//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
 			$flightStr .= $airport;
+
+			//TESTING: appending the lat, long of the extended center line for given airports
+			$flightStr .= $extendedCenterLine;
 
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;
