@@ -12,17 +12,17 @@
             waitSeconds: 60
         });
     </script>
-  
+
 </head>
 <body class="sandcastle-loading" data-sandcastle-bucket="bucket-requirejs.html">
     <style>
         @import url("{{ asset('CesiumOld/Apps/Sandcastle/templates/bucket.css') }}");
     </style>
     <div id="cesiumContainer" class="fullSize"></div>
-    
+
 
     <script id="cesium_sandcastle_script">
-        function startup(Cesium) 
+        function startup(Cesium)
         {
             'use strict';
             //Sandcastle_Begin
@@ -48,25 +48,24 @@
     <?php
         echo "var obj = $data;";
     ?>
-
+    console.log(obj);
     var flights = obj.split(' ');
     flights.pop();
-    // console.log(flights);
     flights.forEach(function(element)
     {
         var points = element.split(',');
         points.pop();
-        console.log(points);
-        var flightPath = viewer.entities.add({
-            polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray(points),
+        //console.log(points);
+      //  var flightPath = viewer.entities.add({
+          //  polyline: {
+          //  positions: Cesium.Cartesian3.fromDegreesArray(points),
             // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
-            width: 2,
-            material: 'FFFFFF'
-        }});
+          //  width: 2,
+          //  material: 'FFFFFF'
+        //}});
     });
 
-   
+
 viewer.zoomTo(viewer.entities);
 
 

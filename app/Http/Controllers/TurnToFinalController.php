@@ -1,7 +1,7 @@
 <?php
 /*
 *Austin Holtz
-*/ 
+*/
 
 namespace NGAFID\Http\Controllers;
 
@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use NGAFID\StabilizedApproach as SA;
 use NGAFID\Main as Main;
 use NGAFID\FlightID as FID;
+use NGAFID\airports as Airport;
 
 class TurnToFinalController extends Controller {
 
@@ -31,13 +32,20 @@ class TurnToFinalController extends Controller {
 	{
 		//initialize the output
 		$output = "";
-		
+
 		//get the string of IDs from the request and convert it into an array
 		$startDate = $request->start;
 		$endDate = $request->end;
 		$flights = FID::where('date','>=',$startDate)
 						->where('date','<=',$endDate)
 						->get();
+		//Creating default airport selector to run queries
+		$airportQuery = Airport::select('*')->get();
+		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
+
+		//Run Queries in order to get extended center lines
+		
+
 
 
 		//for each flight ID in the array, add the spacial data from the final approach to the output
@@ -45,14 +53,14 @@ class TurnToFinalController extends Controller {
 		{
 
 
-			
+
 
 			$flightID=$flight->id;
 			//find the start time of the flight
 			$startTime = FID::where('id',$flightID)->get()->toArray();
 			//retrieve the time of the final approach
 			$startTime = array_pop($startTime)['time'];
-			
+
 
 			//convert time to seconds from 00:00
 			$startTimeInSeconds = $this->timeToSeconds($startTime);
@@ -65,13 +73,13 @@ class TurnToFinalController extends Controller {
 			//some tables are missing this data for a given flight. This skips those flights.
 			if (!isset($timeOfFinal)) continue;
 			if ($finalInfo['airport_id']!=$request->airport) continue;
-			
+
 			$tofInSeconds = $this->timeToSeconds($timeOfFinal);
 
 			//find the time (in milliseconds) that we need to start pulling data from the database
 			//ttf begin time = (total flight time - flight start time) * 1000
 			$finalBeginTime = ($tofInSeconds-$startTimeInSeconds)*1000;
-			
+
 			//pull the time on final from the database. This tells us how many rows to pull
 			$timeOnFinal = $finalInfo['timeOnFinal'];
 
@@ -88,10 +96,13 @@ class TurnToFinalController extends Controller {
 				// $flightStr .= "$datum->msl_altitude,";
 			}
 
+			//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
+			$flightStr .= $airport;
+
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;
 			$output .= "$flightStr ";
-		}		
+		}
 
 		// echo "<pre>";
 		$json = json_encode($output);
@@ -99,7 +110,7 @@ class TurnToFinalController extends Controller {
 		// echo "\n";
 		// print_r(json_decode($json));
 		// echo "</pre>";
-		
+
 		return view('turnToFinalDisplay')->withData($json);
 	}
 
@@ -125,7 +136,7 @@ class TurnToFinalController extends Controller {
 
 	}
 
-	
+
 
 	/**
 	 * Display a listing of the resource.

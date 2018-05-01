@@ -17,7 +17,7 @@ $airports = AP::select('*')->get();
     <div class="container-fluid">
         <h1>Turn To Final</h1>
 
-        Enter flights IDs, comma separated
+        Enter the date range and airport for data.
 
         <form action="turnToFinal/runQuery">
             <input type="date" name="start">
@@ -31,13 +31,12 @@ $airports = AP::select('*')->get();
             </select>
             <button type="submit" name = "submit" value="idString">View flights</button>
         </form>
-        
+
 
     </div>
 
 
-   
+
 
 
 @endsection
-
