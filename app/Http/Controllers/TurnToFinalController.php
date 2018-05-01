@@ -43,7 +43,29 @@ class TurnToFinalController extends Controller {
 		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
 
 		//Run Queries in order to get extended center lines
-		$extendedCenterLine = Airport::where('id', '=', $airport)->get();
+		//$extendedCenterLine = Airport::where('id', '=', $airport)->get();
+		/*
+			Airport extended center lines come in pairs of two. For example airportId 1 and airportId 2 combine to make center line for that Runway
+			In order to correctly choose the pair you have to see which airport id they are using and if it is even then you take that airportId and one before
+			otherwise take the current id and look at the next row.
+		*/
+		$extendedCenterLine = array(); //Array to hold cord and append to data later on
+		$temp = Airport::where('id'. '=', $airport)->get();
+		if($airport % 2 == 1) { //Odd selection
+			$extendedCenterLine.push($temp->extendedcenterlineLong); //Selected airportID long
+			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Selected airportID lat
+			$airport++;
+			$temp = Airport::where('id','=',$airport)->get();
+			$extendedCenterLine.push($temp->extendedcenterlineLong); //Next airportID long
+			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Next airportID lat
+		} else if($airport % 2 == 0) { //Even selection
+			$extendedCenterLine.push($temp->extendedcenterlineLong); //Selected airportID long
+			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Selected airportID lat
+			$airport--;
+			$temp = Airport::where('id','=',$airport)->get();
+			$extendedCenterLine.push($temp->extendedcenterlineLong); //Next airportID long
+			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Next airportID lat
+		}
 
 
 
