@@ -22,12 +22,25 @@
 
 
     <script id="cesium_sandcastle_script">
+
+    <?php
+        echo "var obj = $data;";
+    ?>
+
         function startup(Cesium)
         {
             'use strict';
             //Sandcastle_Begin
             Cesium.BingMapsApi.defaultKey = 'AoUP29Z-v0eqHOJaE4BaVhYJ1XuRZX04Oeiiw8if5KliJq7BbbJw9t0IrPe-Uix1';
-            var viewer = new Cesium.Viewer('cesiumContainer',{sceneMode : Cesium.SceneMode.SCENE2D});
+            if (obj.is3D == true)
+            {
+              var viewer = new Cesium.Viewer('cesiumContainer',{sceneMode : Cesium.SceneMode.SCENE3D});
+            }
+            else
+            {
+              console.log("ITS 2D!");
+              var viewer = new Cesium.Viewer('cesiumContainer',{sceneMode : Cesium.SceneMode.SCENE2D});
+            }
 
             var gfLocation = new Cesium.Cartesian3.fromDegrees(-97.181238, 47.957674, 2631.0827);
 
@@ -45,25 +58,36 @@
     // e.cancel = true;
     // viewer.scene.camera.flyTo(homeCameraView);
 
-    <?php
-        echo "var obj = $data;";
-    ?>
 
-    var flights = obj.split(' ');
-    flights.pop();
+    console.log(obj);
+
+
     // console.log(flights);
-    flights.forEach(function(element)
+    obj.posData.forEach(function(element)
     {
-        var points = element.split(',');
-        points.pop();
+        var points = element;
         console.log(points);
-        var flightPath = viewer.entities.add({
-            polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray(points),
-            // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
-            width: 2,
-            material: 'FFFFFF'
-        }});
+        if (obj.is3D==true)
+        {
+          var flightPath = viewer.entities.add({
+              polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights(points),
+              // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
+              width: 2,
+              material: 'FFFFFF'
+          }});
+        }
+        else
+        {
+            var flightPath = viewer.entities.add({
+                polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArray(points),
+                // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
+                width: 2,
+                material: 'FFFFFF'
+            }});
+        }
+
     });
 
 

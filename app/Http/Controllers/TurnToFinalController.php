@@ -1,7 +1,7 @@
 <?php
 /*
 *Austin Holtz
-*/ 
+*/
 
 namespace NGAFID\Http\Controllers;
 
@@ -30,8 +30,15 @@ class TurnToFinalController extends Controller {
 	public function runQuery(Request $request)
 	{
 		//initialize the output
-		$output = "";
-		
+		$output = new FlightDataCollection($request->dim);
+		if ($request->dim=="3d")
+		{
+			$output->setIs3D(true);
+		}
+		else {
+			$output->setIs3D(false);
+		}
+
 		//get the string of IDs from the request and convert it into an array
 		$startDate = $request->start;
 		$endDate = $request->end;
@@ -40,19 +47,16 @@ class TurnToFinalController extends Controller {
 						->get();
 
 
+		$colPosData = array();
 		//for each flight ID in the array, add the spacial data from the final approach to the output
 		foreach ($flights as $flight)
 		{
-
-
-			
-
 			$flightID=$flight->id;
 			//find the start time of the flight
 			$startTime = FID::where('id',$flightID)->get()->toArray();
 			//retrieve the time of the final approach
 			$startTime = array_pop($startTime)['time'];
-			
+
 
 			//convert time to seconds from 00:00
 			$startTimeInSeconds = $this->timeToSeconds($startTime);
@@ -65,13 +69,13 @@ class TurnToFinalController extends Controller {
 			//some tables are missing this data for a given flight. This skips those flights.
 			if (!isset($timeOfFinal)) continue;
 			if ($finalInfo['airport_id']!=$request->airport) continue;
-			
+
 			$tofInSeconds = $this->timeToSeconds($timeOfFinal);
 
 			//find the time (in milliseconds) that we need to start pulling data from the database
 			//ttf begin time = (total flight time - flight start time) * 1000
 			$finalBeginTime = ($tofInSeconds-$startTimeInSeconds)*1000;
-			
+
 			//pull the time on final from the database. This tells us how many rows to pull
 			$timeOnFinal = $finalInfo['timeOnFinal'];
 
@@ -81,25 +85,26 @@ class TurnToFinalController extends Controller {
 								->limit($timeOnFinal)->get();
 
 			//create a string for the flight, add the longitudes and latitudes
-			$flightStr = "";
+			$flightPosData = array();
 			foreach ($data as $datum) {
-				$flightStr .= "$datum->longitude,";
-				$flightStr .= "$datum->latitude,";
-				// $flightStr .= "$datum->msl_altitude,";
+				if ($request->dim=="3d")
+					array_push($flightPosData,$datum->longitude,$datum->latitude,$datum->msl_altitude);
+				else
+					array_push($flightPosData,$datum->longitude,$datum->latitude);
+
 			}
 
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;
-			$output .= "$flightStr ";
-		}		
+			array_push($colPosData,$flightPosData);
+		}
+		$output->setPosData($colPosData);
 
 		// echo "<pre>";
 		$json = json_encode($output);
 
-		// echo "\n";
-		// print_r(json_decode($json));
-		// echo "</pre>";
-		
+
+
 		return view('turnToFinalDisplay')->withData($json);
 	}
 
@@ -125,7 +130,7 @@ class TurnToFinalController extends Controller {
 
 	}
 
-	
+
 
 	/**
 	 * Display a listing of the resource.
@@ -200,5 +205,29 @@ class TurnToFinalController extends Controller {
 	{
 		//
 	}
+}
+class FlightDataCollection
+{
+	public $is3D;
+	public $eclData;
+	public $posData;
 
+	function __construct()
+	{
+
+	}
+	public function setPosData($in)
+	{
+		$this->posData=$in;
+	}
+
+	public function setEclData($in)
+	{
+		$this->eclData = $in;
+	}
+
+	public function setIs3D($in)
+	{
+		$this->is3D = $in;
+	}
 }
