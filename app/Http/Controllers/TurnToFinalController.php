@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use NGAFID\StabilizedApproach as SA;
 use NGAFID\Main as Main;
 use NGAFID\FlightID as FID;
+use NGAFID\airports as Airport;
 
 class TurnToFinalController extends Controller {
 
@@ -45,10 +46,31 @@ class TurnToFinalController extends Controller {
 		$flights = FID::where('date','>=',$startDate)
 						->where('date','<=',$endDate)
 						->get();
+		//Creating default airport selector to run queries
+		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
+
+		//Run Queries in order to get extended center line of selected airport
+		$airportQuery = Airport::where('id', '=', $airport)->get(); //Returns all columns of users selected airportId
+		$previous = Airport::where('id', '<', $airport)->max('id'); //Returns the previous rows values from users current selected airportId
+		$next = Airport::where('id', '>', $airport)->min('id'); //Returns the next rows values from users current selected airportId
 
 
-		$colPosData = array();
+
+		//For some reason airportQuery creates two objects when ran. The original and an exact copy of it. You need to specify first
+		//print($airportQuery->first()->extendedcenterlineLong);
+		//echo "<br>";
+		//print($airportQuery->first()->extendedcenterlineLat);
+
+		$ecl = array();
+
+		//foreach($ecl as $ex) {
+		//	print($ex);
+		//	echo "<br>";
+		//}
+
+
 		//for each flight ID in the array, add the spacial data from the final approach to the output
+		$colPosData = array();
 		foreach ($flights as $flight)
 		{
 			$flightID=$flight->id;
@@ -94,11 +116,38 @@ class TurnToFinalController extends Controller {
 
 			}
 
+			//$flightStr .= $airport; //current
+			//$flightStr .= $previous; //$previous
+			//$flightStr .= $next; //next
+
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;
 			array_push($colPosData,$flightPosData);
 		}
 		$output->setPosData($colPosData);
+
+		//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
+		//Since extended center line (ECL) is in pairs, need to look at next sql row if airportId is even and look back if it is odd
+		//TODO: Update variables so even and odds are accounted for and then append to flightStr
+		if($airport % 2 == 0) { //Even result
+			$ecl[] = $airportQuery->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $airportQuery->first()->extendedcenterlineLat;	//Initial Lat
+			$temp = Airport::where('id','=', $previous)->get();
+			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+		} else if($airport % 2 == 1) { //odd result
+			$ecl[] = $airportQuery->first()->extendedcenterlineLong;
+			$ecl[] = $airportQuery->first()->extendedcenterlineLat;
+			$temp = Airport::where('id','=', $next)->get();
+			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+		}
+		$queryEclData = array();
+		foreach($ecl as $ex) {
+			array_push($queryEclData,$ex);
+		}
+
+		$output->setEclData($queryEclData);
 
 		// echo "<pre>";
 		$json = json_encode($output);

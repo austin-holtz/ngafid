@@ -74,7 +74,7 @@
               positions: Cesium.Cartesian3.fromDegreesArrayHeights(points),
               // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
               width: 2,
-              material: 'FFFFFF'
+              material : Cesium.Color.GREEN
           }});
         }
         else
@@ -84,11 +84,24 @@
                 positions: Cesium.Cartesian3.fromDegreesArray(points),
                 // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
                 width: 2,
-                material: 'FFFFFF'
+                material : Cesium.Color.BLUE
             }});
         }
 
     });
+
+    var redLine = viewer.entities.add({
+    name : 'Red line on the surface',
+    polyline : {
+        positions : Cesium.Cartesian3.fromDegreesArray(obj.eclData),
+        width : 2,
+        material : Cesium.Color.RED
+    }
+  });
+
+
+
+
 
 
 viewer.zoomTo(viewer.entities);
