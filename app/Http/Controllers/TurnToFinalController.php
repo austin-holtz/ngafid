@@ -42,40 +42,15 @@ class TurnToFinalController extends Controller {
 		//Creating default airport selector to run queries
 		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
 
-		//Run Queries in order to get extended center lines
-		//$extendedCenterLine = Airport::where('id', '=', $airport)->get();
-		/*
-			Airport extended center lines come in pairs of two. For example airportId 1 and airportId 2 combine to make center line for that Runway
-			In order to correctly choose the pair you have to see which airport id they are using and if it is even then you take that airportId and one before
-			otherwise take the current id and look at the next row.
-		*/
-		$extendedCenterLine = array(); //Array to hold cord and append to data later on
-		$temp = Airport::where('id'. '=', $airport)->get();
-		if($airport % 2 == 1) { //Odd selection
-			$extendedCenterLine.push($temp->extendedcenterlineLong); //Selected airportID long
-			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Selected airportID lat
-			$airport++;
-			$temp = Airport::where('id','=',$airport)->get();
-			$extendedCenterLine.push($temp->extendedcenterlineLong); //Next airportID long
-			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Next airportID lat
-		} else if($airport % 2 == 0) { //Even selection
-			$extendedCenterLine.push($temp->extendedcenterlineLong); //Selected airportID long
-			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Selected airportID lat
-			$airport--;
-			$temp = Airport::where('id','=',$airport)->get();
-			$extendedCenterLine.push($temp->extendedcenterlineLong); //Next airportID long
-			$extendedCenterLine.push($temp->extendedcenterlineLat);	//Next airportID lat
-		}
-
+		//Run Queries in order to get extended center line of selected airport
+		$airportQuery = Airport::where('id', '=', $airport)->get(); //Returns all columns of users selected airportId
+		$previous = Airport::where('id', '<', $airport)->max('id'); //Returns the previous rows values from users current selected airportId
+		$next = Airport::where('id', '>', $airport)->min('id'); //Returns the next rows values from users current selected airportId
 
 
 		//for each flight ID in the array, add the spacial data from the final approach to the output
 		foreach ($flights as $flight)
 		{
-
-
-
-
 			$flightID=$flight->id;
 			//find the start time of the flight
 			$startTime = FID::where('id',$flightID)->get()->toArray();
@@ -112,16 +87,16 @@ class TurnToFinalController extends Controller {
 			//create a string for the flight, add the longitudes and latitudes
 			$flightStr = "";
 			foreach ($data as $datum) {
-				$flightStr .= "$datum->longitude,";
-				$flightStr .= "$datum->latitude,";
+				//$flightStr .= "$datum->longitude,";
+				//$flightStr .= "$datum->latitude,";
 				// $flightStr .= "$datum->msl_altitude,";
 			}
 
 			//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
-			$flightStr .= $airport;
-
-			//TESTING: appending the lat, long of the extended center line for given airports
-			$flightStr .= $extendedCenterLine;
+			//TODO: Update variables so even and odds are accounted for and then append to flightStr
+			$flightStr .= $airport; //current
+			$flightStr .= $previous; //$previous
+			$flightStr .= $next; //next
 
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;
