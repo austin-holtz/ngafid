@@ -119,7 +119,7 @@ class TurnToFinalController extends Controller {
 		$timeArray = explode(":",$inTime);
 
 		//convert the time to seconds. hh*60^2 + mm 8 60 + ss
-		$seconds = $timeArray[0]*60**2+$timeArray[1]*60+$timeArray[2];
+		$seconds = $timeArray[0]*pow(60,2)+$timeArray[1]*60+$timeArray[2];
 		return $seconds;
 	}
 
