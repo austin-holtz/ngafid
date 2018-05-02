@@ -47,6 +47,18 @@ class TurnToFinalController extends Controller {
 		$previous = Airport::where('id', '<', $airport)->max('id'); //Returns the previous rows values from users current selected airportId
 		$next = Airport::where('id', '>', $airport)->min('id'); //Returns the next rows values from users current selected airportId
 
+		//For some reason airportQuery creates two objects when ran. The original and an exact copy of it. You need to specify first
+		//print($airportQuery->first()->extendedcenterlineLong);
+		//echo "<br>";
+		//print($airportQuery->first()->extendedcenterlineLat);
+
+		$ecl = array();
+
+		//foreach($ecl as $ex) {
+		//	print($ex);
+		//	echo "<br>";
+		//}
+
 
 		//for each flight ID in the array, add the spacial data from the final approach to the output
 		foreach ($flights as $flight)
@@ -87,16 +99,35 @@ class TurnToFinalController extends Controller {
 			//create a string for the flight, add the longitudes and latitudes
 			$flightStr = "";
 			foreach ($data as $datum) {
-				//$flightStr .= "$datum->longitude,";
-				//$flightStr .= "$datum->latitude,";
+				$flightStr .= "$datum->longitude,";
+				$flightStr .= "$datum->latitude,";
 				// $flightStr .= "$datum->msl_altitude,";
 			}
 
 			//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
+			//Since extended center line (ECL) is in pairs, need to look at next sql row if airportId is even and look back if it is odd
 			//TODO: Update variables so even and odds are accounted for and then append to flightStr
-			$flightStr .= $airport; //current
-			$flightStr .= $previous; //$previous
-			$flightStr .= $next; //next
+			if($airport % 2 == 0) { //Even result
+				$ecl[] = $airportQuery->first()->extendedcenterlineLong; //Initial long
+				$ecl[] = $airportQuery->first()->extendedcenterlineLat;	//Initial Lat
+				$temp = Airport::where('id','=', $previous)->get();
+				$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+				$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+			} else if($airport % 2 == 1) { //odd result
+				$ecl[] = $airportQuery->first()->extendedcenterlineLong;
+				$ecl[] = $airportQuery->first()->extendedcenterlineLat;
+				$temp = Airport::where('id','=', $next)->get();
+				$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+				$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+			}
+
+			foreach($ecl as $ex) {
+				$flightStr .= $ex;
+			}
+
+			//$flightStr .= $airport; //current
+			//$flightStr .= $previous; //$previous
+			//$flightStr .= $next; //next
 
 			//add the array to the output. key is the flight id and the value is an array of points.
 			// $output["f$flightID"]=$flightStr;

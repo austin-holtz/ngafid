@@ -48,22 +48,50 @@
     <?php
         echo "var obj = $data;";
     ?>
-    console.log(obj);
+    //console.log(obj);
     var flights = obj.split(' ');
-    flights.pop();
+    flights.pop(); //Elimates the extra space when seperating the intiial flights array
     flights.forEach(function(element)
     {
         var points = element.split(',');
-        points.pop();
-        //console.log(points);
-      //  var flightPath = viewer.entities.add({
-          //  polyline: {
-          //  positions: Cesium.Cartesian3.fromDegreesArray(points),
-            // positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
-          //  width: 2,
-          //  material: 'FFFFFF'
-        //}});
+        points.pop(); //Pops the null space at the end of the seperated
+        console.log(points);
+        var flightPath = viewer.entities.add({
+            polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArray(points),
+             //positions: Cesium.Cartesian3.fromDegreesArrayHeights([]), //Includes heights for the lines as well
+            width: 2,
+            material: 'FFFFFF'
+        }});
     });
+
+    var redLine = viewer.entities.add({
+    name : 'Red line on the surface',
+    polyline : {
+        positions : Cesium.Cartesian3.fromDegreesArray([-97.166227, 47.926182,-97.166218, 48.015239]),
+        width : 2,
+        material : Cesium.Color.RED
+    }
+  });
+
+    var blueLine = viewer.entities.add({
+    name : 'blue line on the surface',
+    polyline : {
+        positions : Cesium.Cartesian3.fromDegreesArray([-97.181222, 47.837136, -97.181328, 48.015242]),
+        width : 2,
+        material : Cesium.Color.BLUE
+   }
+  });
+  var greenLine = viewer.entities.add({
+  name : 'green line on the surface',
+  polyline : {
+      positions : Cesium.Cartesian3.fromDegreesArray([-97.007348, 47.952266, -97.005724, 47.937978]),
+      width : 2,
+      material : Cesium.Color.GREEN
+ }
+});
+
+
 
 
 viewer.zoomTo(viewer.entities);
