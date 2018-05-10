@@ -45,6 +45,7 @@ class TurnToFinalController extends Controller {
 		$endDate = $request->end;
 		$flights = FID::where('date','>=',$startDate)
 						->where('date','<=',$endDate)
+						->orderBy('id', 'asc')
 						->get();
 		//Creating default airport selector to run queries
 		$airport = $request->input('airport'); //Gets the airportID of the one chosen by user in turnToFinal webpage
@@ -67,6 +68,29 @@ class TurnToFinalController extends Controller {
 		//	print($ex);
 		//	echo "<br>";
 		//}
+
+		//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
+		//Since extended center line (ECL) is in pairs, need to look at next sql row if airportId is even and look back if it is odd
+		//TODO: Update variables so even and odds are accounted for and then append to flightStr
+		if($airport % 2 == 0) { //Even result
+			$ecl[] = $airportQuery->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $airportQuery->first()->extendedcenterlineLat;	//Initial Lat
+			$temp = Airport::where('id','=', $previous)->get();
+			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+		} else if($airport % 2 == 1) { //odd result
+			$ecl[] = $airportQuery->first()->extendedcenterlineLong;
+			$ecl[] = $airportQuery->first()->extendedcenterlineLat;
+			$temp = Airport::where('id','=', $next)->get();
+			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
+			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
+		}
+		$queryEclData = array();
+		foreach($ecl as $ex) {
+			array_push($queryEclData,$ex);
+		}
+
+		$output->setEclData($queryEclData);
 
 
 		//for each flight ID in the array, add the spacial data from the final approach to the output
@@ -104,7 +128,9 @@ class TurnToFinalController extends Controller {
 			//pull lat and long data from main table. Limit to the value in timeOnFinal
 			$data = Main::where('flight',$flightID)
 								->where('time','>=',$finalBeginTime)
-								->limit($timeOnFinal)->get();
+								->limit($timeOnFinal)
+								->orderBy('time', 'asc')
+								->get();
 
 			//create a string for the flight, add the longitudes and latitudes
 			$flightPosData = array();
@@ -116,6 +142,61 @@ class TurnToFinalController extends Controller {
 
 			}
 
+			// Calculate whether flight pattern exceeds 100ft distance from ECL
+			//     once approximately parallel (within 0.1 rad of ECL slope).
+			// TODO: Add to JSON data sent to Cesium client.
+			// TODO: Potentially incorporate variable maximum distance depending
+			//           on 2D-Cartesian distance from runway's final endpoint.
+			// -- Matt Watson
+			$exceeds = False;
+
+			//ECL coords and slope
+			$a = $ecl[0] / 131239;
+			$b = $ecl[1] / 77136;
+			$c = $ecl[2] / 131239;
+			$d = $ecl[3] / 77136;
+			$m = ($d - $b) / ($c - $a);
+			//degrees of latitude and logitude converted to feet
+			$lat1 = 0;
+			$lat2 = 0;
+			$long1 = 0;
+			$long2 = 0;
+			$dataSlope = 0;
+			foreach ($data as $datum) {
+				if ($lat1 == 0) {
+					$long1 = $datum->longitude;
+					$lat1 = $datum->latitude;
+					continue;
+				}
+				$long2 = $datum->longitude / 131239;
+				$lat2 = $datum->latitude / 77136;
+				$m2 = ($lat1 - $lat2) / ($long1 - $long2);
+				// line is nearly parallel with ECL to within 0.1 radians
+				if (abs(atan(($m - $m2)/(1 + ($m * $m2)))) < 0.1) {
+					$continueInner = False;
+					foreach ($data as $datum2) {
+						if ($continueInner == False) {
+							if ($datum2->latitude == $datum->latitude) {
+								$continueInner = True;
+							}
+							continue;
+						}
+						$x = $datum2->longitude / 131239;
+						$y = $datum2->latitude / 77136;
+						//distance in feet
+						$distance = abs($y - ($m * $x) - $b + ($m * $a)) / sqrt(1 + ($m * $m));
+						//if dist > 100 ft from ECL
+						if ($distance > 100) {
+							$exceeds = True;
+							break;
+						}
+					}
+					break;
+				}
+				$lat1 = $lat2;
+				$long1 = $long2;
+			}
+
 			//$flightStr .= $airport; //current
 			//$flightStr .= $previous; //$previous
 			//$flightStr .= $next; //next
@@ -125,29 +206,6 @@ class TurnToFinalController extends Controller {
 			array_push($colPosData,$flightPosData);
 		}
 		$output->setPosData($colPosData);
-
-		//Appends airportId to the end of the data variable which eventually holds all lat,long,height,airportId and passed into turnToFinal.blade.php
-		//Since extended center line (ECL) is in pairs, need to look at next sql row if airportId is even and look back if it is odd
-		//TODO: Update variables so even and odds are accounted for and then append to flightStr
-		if($airport % 2 == 0) { //Even result
-			$ecl[] = $airportQuery->first()->extendedcenterlineLong; //Initial long
-			$ecl[] = $airportQuery->first()->extendedcenterlineLat;	//Initial Lat
-			$temp = Airport::where('id','=', $previous)->get();
-			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
-			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
-		} else if($airport % 2 == 1) { //odd result
-			$ecl[] = $airportQuery->first()->extendedcenterlineLong;
-			$ecl[] = $airportQuery->first()->extendedcenterlineLat;
-			$temp = Airport::where('id','=', $next)->get();
-			$ecl[] = $temp->first()->extendedcenterlineLong; //Initial long
-			$ecl[] = $temp->first()->extendedcenterlineLat;	//Initial Lat
-		}
-		$queryEclData = array();
-		foreach($ecl as $ex) {
-			array_push($queryEclData,$ex);
-		}
-
-		$output->setEclData($queryEclData);
 
 		// echo "<pre>";
 		$json = json_encode($output);
